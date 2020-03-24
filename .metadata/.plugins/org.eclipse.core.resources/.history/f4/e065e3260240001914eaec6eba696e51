@@ -1,0 +1,18 @@
+package exercise3;
+
+public class TestApp {
+
+	public static void main(String[] args) {
+		Item i1 = new Item(100, "øl");
+		
+		Item e1 = new ElApp(15, "Pære");
+		
+		Item f1 = new Food(100, "øl");
+		
+		System.out.println(i1.calcVAT());
+		System.out.println(f1.calcVAT());
+		System.out.println(e1.calcVAT());
+
+	}
+
+}

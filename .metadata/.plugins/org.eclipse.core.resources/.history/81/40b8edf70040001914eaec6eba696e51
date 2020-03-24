@@ -1,0 +1,6 @@
+package exercise3;
+
+public class Food extends Item {
+
+
+}

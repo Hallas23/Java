@@ -1,0 +1,10 @@
+package exercise3;
+
+public interface Adapter extends Item{
+
+	public double getVat() {
+		
+	}
+
+
+}

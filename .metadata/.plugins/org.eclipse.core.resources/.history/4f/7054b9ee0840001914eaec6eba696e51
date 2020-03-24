@@ -1,0 +1,20 @@
+package exercise3;
+
+public class Adapter extends Item {
+
+	private AlcoBev alcoBev;
+
+	public Adapter(AlcoBev alcobev) {
+		 this.alcoBev = alcobev;
+	}
+
+	@Override
+	public double getVAT() {
+		return alcoBev.getVat();
+	}
+	
+	public void setAdaptor(AlcoBev alcobev) {
+		this.alcoBev = alcobev;
+	}
+
+}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;Pre.java&apos; to &apos;AarhusBryg/src/application.controller&apos;&#x0D;&#x0A;- Original project: &apos;OrdinationStudent&apos;&#x0D;&#x0A;- Destination element: &apos;AarhusBryg/src/application.controller&apos;&#x0D;&#x0A;- Original element: &apos;controller.Pre.java&apos;" description="Copy compilation unit" destination="=AarhusBryg/src&lt;application.controller" element1="/&lt;controller{Pre.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1553592064107" units="1" version="1.0"/>
+</session>

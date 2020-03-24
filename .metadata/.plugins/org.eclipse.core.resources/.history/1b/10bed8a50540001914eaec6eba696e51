@@ -1,0 +1,18 @@
+package exercise3;
+
+public class Food extends Item {
+	
+	
+
+	public Food(double netprice, String name) {
+		super();
+		this.setName(name);
+		this.setNetprice(netprice);
+	}
+	
+	public double calcVAT() {
+		return (getNetprice() * 1.05) - getNetprice();
+	}
+
+
+}

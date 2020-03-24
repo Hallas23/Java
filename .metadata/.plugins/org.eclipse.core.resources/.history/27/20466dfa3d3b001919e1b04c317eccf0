@@ -1,0 +1,27 @@
+package example;
+
+import java.io.FileInputStream;
+import java.util.Scanner;
+
+public class LaesFraFil {
+	
+	public static void main(String[] args) {
+		try {
+			
+			String filenavn = "20190227";
+			FileInputStream filein = 
+			new FileInputStream("C:/Users/krpo/Documents/My Files/EAAA/DMU/DAOS/Præsentationer og Opgaver/"
+					             + "Lektion 8/" + filenavn + ".txt");	
+			
+			Scanner scan = new Scanner(filein);
+			while(scan.hasNext()){
+				String s = scan.nextLine();
+				System.out.println("Læst fra fil " + s);
+			}
+			scan.close();
+		} catch (Exception e) {
+			System.out.println("fejl:  " + e.getMessage());
+		}
+	}
+
+}

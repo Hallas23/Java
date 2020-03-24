@@ -1,0 +1,1309 @@
+package application.controller;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+
+import application.model.Betalingsform;
+import application.model.Gaveæske;
+import application.model.IngenRabat;
+import application.model.PantProdukt;
+import application.model.Pris;
+import application.model.PrisRabat;
+import application.model.Prisliste;
+import application.model.ProcentRabat;
+import application.model.Produkt;
+import application.model.Produktgruppe;
+import application.model.Rabat;
+import application.model.Rundvisning;
+import application.model.Salg;
+import application.model.Salgslinje;
+import application.model.Udlejning;
+import storage.Storage;
+
+public class Controller {
+
+	private static Controller controller;
+	private Storage storage;
+
+	public static Controller getController() {
+		if (controller == null) {
+			controller = new Controller();
+		}
+		return controller;
+	}
+
+	private Controller() {
+		storage = Storage.getInstance();
+	}
+
+	/**
+	 * Hvis navn ikke har en længde over 0 kastes en RuntimeException Hvis Opretter
+	 * en produktgruppe, produktgruppen bliver addet til storage og bliver retuneret
+	 *
+	 * @param navn
+	 * @param udlejningsprodukt
+	 */
+
+	public Produktgruppe createProduktgruppe(String navn, boolean udlejningsprodukt) throws RuntimeException {
+		if (navn.length() < 0)
+			throw new IllegalArgumentException("En produktgruppe skal have et navn");
+
+		Produktgruppe produktgruppe = new Produktgruppe(navn, udlejningsprodukt);
+		storage.addProduktgruppe(produktgruppe);
+		return produktgruppe;
+	}
+
+	/**
+	 * Sletter en produktgruppe
+	 * 
+	 * @param produktgruppe
+	 */
+
+	public void deleteProduktgruppe(Produktgruppe produktgruppe) {
+		storage.removeProduktgruppe(produktgruppe);
+	}
+
+	/**
+	 * OpdaterProduktgruppe
+	 * 
+	 * @param produkt
+	 * @param navn
+	 * @param antalPålager
+	 * @param ptype
+	 */
+
+	public void updateProduktgruppe(Produktgruppe produktgruppe, String navn, boolean udlejningsprodukt) {
+		produktgruppe.setNavn(navn);
+		produktgruppe.setUdlejningsprodukt(udlejningsprodukt);
+	}
+
+	/**
+	 * Hvis navn ikke har en længde over 0 kastes en RuntimeException Hvis Hvis
+	 * lagerAntal er under 0 kastes en runtime exception ptype opretter et nyt
+	 * produktet bliver oprettet, produktet bliver addet til storage og bliver
+	 * retuneret Pre: ptype må ikke være null
+	 *
+	 * @param ptype
+	 * @param navn
+	 * @param lagerantal
+	 */
+
+	public Produkt createProdukt(Produktgruppe ptype, String navn, int lagerAntal) throws RuntimeException {
+		Pre.require(ptype != null);
+		if (navn.length() < 0)
+			throw new IllegalArgumentException("Et produkt skal have et navn");
+		if (lagerAntal < 0)
+			throw new IllegalArgumentException("Et produkt kan ikke have et lager antal under 0");
+
+		Produkt produkt = ptype.CreateProdukt(navn, lagerAntal);
+		storage.addProdukt(produkt);
+		return produkt;
+	}
+
+	/**
+	 * Sletter et produkt
+	 * 
+	 * @param produkt
+	 */
+
+	public void deleteProdukt(Produkt produkt) {
+		produkt.getProduktgruppe().removeProdukt(produkt);
+		storage.removeProdukt(produkt);
+	}
+
+	/**
+	 * OpdaterProdukt
+	 * 
+	 * @param produkt
+	 * @param navn
+	 * @param antalPålager
+	 * @param ptype
+	 */
+
+	public void updateProdukt(Produkt produkt, String navn, int antalPålager, Produktgruppe ptype) {
+		produkt.setNavn(navn);
+		produkt.setAntalPåLager(antalPålager);
+		produkt.getProduktgruppe().removeProdukt(produkt);
+		ptype.addProdukt(produkt);
+	}
+
+	/**
+	 * Hvis navn ikke har en længde over 0 kastes en RuntimeException Hvis Hvis
+	 * lagerAntal er under 0 kastes en runtime exception ptype opretter et nyt Hvis
+	 * pantpris er under 0 kastes en runtime exception ptype opretter et nyt
+	 * produktet bliver oprettet, produktet bliver addet til storage og bliver
+	 * retuneret Pre: ptype må ikke være null
+	 *
+	 * @param ptype
+	 * @param navn
+	 * @param lagerantal
+	 * @param pantpris
+	 */
+
+	public PantProdukt createPantProdukt(Produktgruppe ptype, String navn, int lagerAntal, double pantpris)
+			throws RuntimeException {
+		Pre.require(ptype != null);
+		if (navn.length() < 0)
+			throw new IllegalArgumentException("Et produkt skal have et navn");
+		if (lagerAntal < 0)
+			throw new IllegalArgumentException("Et produkt kan ikke have et lager antal under 0");
+		if (pantpris <= 0)
+			throw new IllegalArgumentException("Pantprisen skal være større end 0");
+
+		PantProdukt produkt = ptype.CreatePantProdukt(navn, lagerAntal, pantpris);
+		storage.addProdukt(produkt);
+		return produkt;
+	}
+
+	/**
+	 * OpdaterPantProdukt
+	 * 
+	 * @param produkt
+	 * @param navn
+	 * @param antalPålager
+	 * @param ptype
+	 * @param pantpris
+	 */
+
+	public void updatePantProdukt(PantProdukt produkt, String navn, int antalPålager, Produktgruppe ptype,
+			double pantpris) {
+		produkt.setNavn(navn);
+		produkt.setAntalPåLager(antalPålager);
+		produkt.setPantPris(pantpris);
+		produkt.getProduktgruppe().removeProdukt(produkt);
+		ptype.addProdukt(produkt);
+	}
+
+	/**
+	 * Hvis navn ikke har en længde over 0 kastes en RuntimeException Hvis
+	 * lagerAntal er under 0 kastes en runtime exception Hvis glasantal er under 0
+	 * kastes en runtime exception Hvis flaskeantal er under 0 kastes en runtime
+	 * exception gaveæsken bliver oprettet, gaveæsken bliver addet til storage og
+	 * bliver retuneret Pre: ptype må ikke være null
+	 *
+	 * @param ptype
+	 * @param navn
+	 * @param lagerantal
+	 * @param glasantal
+	 * @param flaskeantal
+	 */
+
+	public Gaveæske createGaveæske(String navn, int lagerAntal, int glasAntal, int flaskeAntal, Produktgruppe ptype)
+			throws RuntimeException {
+		Pre.require(ptype != null);
+		if (navn.length() < 0)
+			throw new IllegalArgumentException("En gaveæske skal have et navn");
+		if (lagerAntal < 0)
+			throw new IllegalArgumentException("En gaveæske kan ikke have et lager antal under 0");
+		if (glasAntal < 0)
+			throw new IllegalArgumentException("En gaveæske kan ikke have et glas antal under 0");
+		if (flaskeAntal < 0)
+			throw new IllegalArgumentException("En gaveæske kan ikke have et flaske antal under 0");
+
+		Gaveæske gaveæske = ptype.CreateGaveæske(navn, lagerAntal, glasAntal, flaskeAntal);
+		storage.addProdukt(gaveæske);
+		return gaveæske;
+	}
+
+	/**
+	 * OpdaterGaveæske
+	 * 
+	 * @param produkt
+	 * @param navn
+	 * @param antalPålager
+	 * @param flaskeantal
+	 * @param glasantal
+	 * @param ptype
+	 */
+
+	public void updateGaveæske(Gaveæske gaveæske, String navn, int antalPålager, int flaskeantal, int glasantal,
+			Produktgruppe ptype) {
+		gaveæske.setNavn(navn);
+		gaveæske.setAntalPåLager(antalPålager);
+		gaveæske.setFlaskeAntal(flaskeantal);
+		gaveæske.setGlasAntal(glasantal);
+		gaveæske.getProduktgruppe().removeProdukt(gaveæske);
+		ptype.addProdukt(gaveæske);
+
+	}
+
+	public void addToGaveæske(Gaveæske gaveæske, Produkt produkt) {
+		gaveæske.addProdukt(produkt);
+	}
+
+	public void removeFromGaveæske(Gaveæske gaveæske, Produkt produkt) {
+		gaveæske.removeProdukt(produkt);
+	}
+
+	/**
+	 * Hvis beksrivelse ikke har en længde over 0 kastes en RuntimeException Hvis
+	 * slutTid er før startTid kastes en RuntimeException Hvis prisPrPerson er
+	 * lavere end 0 kastes en RuntimeException
+	 * 
+	 * Pre: dato må ikke være null
+	 * 
+	 * Metoden opretter en rundvisning og adder den til storage
+	 *
+	 * @param beksrivelse
+	 * @param starTtid
+	 * @param slutTid
+	 * @param prisPrPerson
+	 * @param kontaktNr
+	 * @param betalingsform
+	 * @param antalPersoner
+	 * @param studieRabat
+	 * 
+	 */
+
+	public Rundvisning createRundvisning(String beskrivelse, LocalTime startTid, LocalTime slutTid, LocalDate dato,
+			double prisPrPerson, int kontaktNr, Betalingsform betalingsform, int antalPersoner, boolean studieRabat)
+			throws RuntimeException {
+
+		if (beskrivelse.length() < 0)
+			throw new IllegalArgumentException("En rundvisning skal have en beskrielse");
+		if (slutTid.isBefore(startTid))
+			throw new IllegalArgumentException("En start tid skal være før en slut tid");
+		if (prisPrPerson < 0)
+			throw new IllegalArgumentException("En prisPrPerson må ikke være negativ");
+
+		Rundvisning rundvisning = new Rundvisning(beskrivelse, startTid, slutTid, dato, prisPrPerson, kontaktNr,
+				betalingsform, antalPersoner, studieRabat);
+		storage.addRundvisning(rundvisning);
+		return rundvisning;
+	}
+
+	/**
+	 * Sletter en rundvisning
+	 * 
+	 * @param rundvisning
+	 */
+
+	public void deleteRundvisning(Rundvisning rundvisning) {
+		storage.removeRundvisning(rundvisning);
+	}
+
+	/**
+	 * Opdater Rundvisning
+	 * 
+	 * @param rundvisning
+	 * @param beskrivelse
+	 * @param startTid
+	 * @param slutTid
+	 * @param prisPrPerson
+	 * @param kontaktNr
+	 * @param betalingsform
+	 * @param antalpersoner
+	 * @param studieRabat
+	 */
+
+	public void updateRundvisning(Rundvisning rundvisning, String beskrivelse, LocalTime startTid, LocalTime slutTid,
+			LocalDate dato, double prisPrPerson, int kontaktNr, Betalingsform betalingsform, int antalPersoner,
+			boolean studieRabat) {
+		rundvisning.setBeskrivelse(beskrivelse);
+		rundvisning.setStartTid(startTid);
+		rundvisning.setSlutTid(slutTid);
+		rundvisning.setDato(dato);
+		rundvisning.setPrisPrPerson(prisPrPerson);
+		rundvisning.setKontaktNr(kontaktNr);
+		rundvisning.setBetalingsform(betalingsform);
+		rundvisning.setAntalPersoner(antalPersoner);
+		rundvisning.setStudieRabat(studieRabat);
+
+	}
+
+	public void betalRundvisning(Rundvisning rundvisning, Betalingsform betalingsform) {
+		rundvisning.setBetalingsform(betalingsform);
+	}
+
+	public double rundvisningSamletPris(Rundvisning rundvisning) {
+		return rundvisning.getSamletPris();
+	}
+
+	//
+
+	/**
+	 * Hvis navn ikke har en længde over 0 kastes en RuntimeException Hvis
+	 * telefonnummeret ikke har en længde på 8 kastes en RuntimeException Hvis
+	 * telefonnummeret indeholder andre karaktere end [0-9] kastes e
+	 * RuntimeException
+	 * 
+	 * Opretter en udlejning og adder den til storage
+	 * 
+	 * @param navn
+	 * @param tlf
+	 * @param udlejningsDato
+	 * @param afleveringsdato
+	 * @return
+	 */
+
+	public Udlejning createUdlejning() {
+		Udlejning udlejning = new Udlejning();
+		storage.addUdlejning(udlejning);
+		return udlejning;
+
+	}
+
+	/**
+	 * Opdatere en Udlejning
+	 * 
+	 * @param udlejning
+	 * @param navn
+	 * @param tlf
+	 * @param udlejningsDato
+	 * @param afleveringsDato
+	 * @param betalingsform
+	 * @param afleveret
+	 */
+
+	public void updateUdlejing(Udlejning udlejning, String navn, String tlf, LocalDate udlejningsDato,
+			LocalDate afleveringsDato) {
+		udlejning.setNavn(navn);
+		udlejning.setTlf(tlf);
+		udlejning.setUdlejningsDato(udlejningsDato);
+		udlejning.setAfleveringsDato(afleveringsDato);
+	}
+
+	/**
+	 * Betaler en udlejning
+	 * 
+	 * @param udlejning
+	 * @param betalingsform
+	 */
+
+	public void betalUdlejning(Udlejning udlejning, Betalingsform betalingsform) {
+		udlejning.setBetalingsform(betalingsform);
+		udlejning.setAfleveret(true);
+	}
+
+	/**
+	 * Sletter en udlejning
+	 * 
+	 * @param udlejning
+	 */
+
+	public void deleteUdlejning(Udlejning udlejning) {
+		storage.removeUdlejning(udlejning);
+	}
+
+	/**
+	 * Hvis navn ikke har en længde over 0 kastes en RuntimeException
+	 * 
+	 * Opretter en betalingsform og adder den til storage
+	 * 
+	 * @param navn
+	 * @return
+	 */
+
+	public Betalingsform createBetalingsform(String navn) {
+		if (navn.length() < 0)
+			throw new IllegalArgumentException("En betalingsform skal have et navn");
+
+		Betalingsform betalingsform = new Betalingsform(navn);
+		storage.addBetalingsform(betalingsform);
+		return betalingsform;
+	}
+
+	/**
+	 * Sletter en betalingsform
+	 * 
+	 * @param betalingsform
+	 */
+
+	public void deleteBetalingsform(Betalingsform betalingsform) {
+		storage.removeBetalingsform(betalingsform);
+	}
+
+	/**
+	 * Opdatere en betalingsform
+	 * 
+	 * @param betalingsform
+	 * @param navn
+	 */
+
+	public void updateBetalingsform(Betalingsform betalingsform, String navn) {
+		betalingsform.setNavn(navn);
+	}
+
+	/**
+	 * Opretter et salg
+	 * 
+	 * @return
+	 */
+
+	public Salg createSalg() {
+		Salg salg = new Salg();
+		storage.addSalg(salg);
+		return salg;
+	}
+
+	/**
+	 * Sletter et salg
+	 * 
+	 * @param salg
+	 */
+
+	public void deleteSalg(Salg salg) {
+		storage.removeSalg(salg);
+	}
+
+	/**
+	 * Opdatere et salg
+	 * 
+	 * @param salg
+	 * @param dato
+	 * @param betalingsform
+	 */
+
+	public void updateSalg(Salg salg, LocalDate dato, Betalingsform betalingsform) {
+		salg.setDato(dato);
+		salg.setBetalingsform(betalingsform);
+	}
+
+	public void betalSalg(Salg salg, Betalingsform betalingsform) {
+		salg.setBetalingsform(betalingsform);
+	}
+
+	/**
+	 * Opretter en salgslinje for et salg
+	 * 
+	 * Pre: salg må ikke være null og rabat må ikke være null
+	 * 
+	 * @param salg
+	 * @param antal
+	 * @param rabat
+	 * @param pris
+	 * @return
+	 */
+
+	public Salgslinje createSalgslinje(Salg salg, int antal, Rabat rabat, Pris pris) {
+		Pre.require(salg != null && rabat != null);
+		if (antal < 0)
+			throw new IllegalArgumentException("Et antal må ikke være negativ");
+		Salgslinje salgslinje = salg.createSalgslinje(pris, antal, rabat);
+		return salgslinje;
+	}
+
+	/**
+	 * Opdatere en salgslinje
+	 * 
+	 * @param salgslinje
+	 * @param antal
+	 * @param rabat
+	 * @param pris
+	 */
+
+	public void updateSalgslinje(Salgslinje salgslinje, int antal, Rabat rabat, Pris pris) {
+		salgslinje.setAntal(antal);
+		salgslinje.setProdukPris(pris);
+		salgslinje.setRabat(rabat);
+	}
+
+	/**
+	 * Sletter en salgslinje fra et salg
+	 * 
+	 * @param salg
+	 * @param salgslinje
+	 */
+
+	public void removeSalgslinje(Salg salg, Salgslinje salgslinje) {
+		salg.removeSalgslinje(salgslinje);
+	}
+
+	/**
+	 * Opretter en prisliste
+	 * 
+	 * @param navn
+	 * @return
+	 */
+
+	public Prisliste createPrisliste(String navn) {
+		if (navn.length() < 0)
+			throw new IllegalArgumentException("En prisliste skal have et navn");
+		Prisliste prisliste = new Prisliste(navn);
+		storage.addPrisliste(prisliste);
+		return prisliste;
+	}
+
+	/**
+	 * Opdatere en prisliste
+	 * 
+	 * @param prisliste
+	 * @param navn
+	 */
+
+	public void updatePrisliste(Prisliste prisliste, String navn) {
+		prisliste.setNavn(navn);
+	}
+
+	/**
+	 * Sletter en prisliste
+	 * 
+	 * @param prisliste
+	 */
+
+	public void deletePrisliste(Prisliste prisliste) {
+		storage.removePrisliste(prisliste);
+	}
+
+	/**
+	 * Opretter en pris for en prisliste
+	 * 
+	 * Pre: prisliste må ikke være null og produkt må ikke være null
+	 * 
+	 * @param prisliste
+	 * @param pris
+	 * @param produkt
+	 */
+
+	public Pris createPris(Prisliste prisliste, double pris, Produkt produkt) {
+		Pre.require(prisliste != null && produkt != null);
+		if (pris < 0)
+			throw new IllegalArgumentException("En pris må ikke være negativ");
+		Pris prisprodukt = prisliste.CreatePris(pris, produkt);
+		return prisprodukt;
+	}
+
+	/**
+	 * Opdatere en Produktpris
+	 * 
+	 * @param prisprodukt
+	 * @param pris
+	 * @param produkt
+	 */
+
+	public void updatePris(Pris prisprodukt, int pris, Produkt produkt) {
+		prisprodukt.setProdukt(produkt);
+		prisprodukt.setPris(pris);
+	}
+
+	/**
+	 * Sletter en pris fra en prisliste
+	 * 
+	 * @param pris
+	 * @param prisliste
+	 */
+
+	public void removePris(Pris pris, Prisliste prisliste) {
+		prisliste.removePris(pris);
+	}
+
+	/**
+	 * Opretter ny IngenRabat
+	 * 
+	 * @return
+	 */
+	public Rabat createIngenRabat() {
+		Rabat r = new IngenRabat();
+		return r;
+	}
+
+	/**
+	 * Opretter en ny PrisRabat
+	 * 
+	 * @param pris
+	 * @return
+	 */
+	public Rabat createPrisRabat(double pris) {
+		if (pris <= 0) {
+			throw new RuntimeException("Ugyldig rabat");
+		}
+		Rabat r = new PrisRabat(pris);
+		return r;
+	}
+
+	/**
+	 * Opretter en ny ProcentRabat
+	 * 
+	 * @param procent
+	 * @return
+	 */
+	public Rabat createProcentRabat(double procent) {
+		if (procent <= 0) {
+			throw new RuntimeException("Ugyldig rabat");
+		}
+		Rabat r = new ProcentRabat(procent);
+		return r;
+	}
+
+	/**
+	 * Returnere et HashSet af alle produkter
+	 * 
+	 * @return
+	 */
+
+	public HashSet<Produkt> getAllProdukter() {
+		return storage.getProdukter();
+	}
+
+	/**
+	 * Retunere et Treeset af alle produktgrupper
+	 * 
+	 * @return
+	 */
+
+	public List<Produktgruppe> getAllProduktgrupper() {
+		return storage.getProduktgrupper();
+	}
+
+	/**
+	 * Retunere en liste af alle prislister
+	 * 
+	 * @return
+	 */
+
+	public List<Prisliste> getAllPrislister() {
+		return storage.getPrislister();
+	}
+
+	/**
+	 * Retunere en liste af alle salg
+	 * 
+	 * @return
+	 */
+
+	public List<Salg> getAllSalg() {
+		return storage.getSalgliste();
+	}
+
+	/**
+	 * Retunere en liste af alle rundvisninger
+	 * 
+	 * @return
+	 */
+
+	public List<Rundvisning> getAllRundvisningerSorted() {
+		List<Rundvisning> sorterederundvisninger = new ArrayList<>();
+		sorterederundvisninger.addAll(storage.getRundvisninger());
+		Collections.sort(sorterederundvisninger);
+		return sorterederundvisninger;
+	}
+
+	/**
+	 * Retunere en liste af alle udlejninger
+	 * 
+	 * @return
+	 */
+
+	public List<Udlejning> getAllUdlejninger() {
+		return storage.getUdlejninger();
+	}
+
+	/**
+	 * Retunere en liste af alle betalingsformer
+	 * 
+	 * @return
+	 */
+
+	public List<Betalingsform> getAllBetalingsformer() {
+		return storage.getBetalingsformer();
+	}
+
+	/**
+	 * retunere en liste af dagens salg
+	 * 
+	 * @return
+	 */
+
+	public List<Salg> getDagensSalg() {
+		List<Salg> dagenssolgte = new ArrayList<>();
+		for (Salg s : storage.getSalgliste()) {
+			if (s.getDato() != null && s.getDato().equals(LocalDate.now())) {
+				dagenssolgte.add(s);
+			}
+		}
+		return dagenssolgte;
+	}
+
+	public int antalKlipiAlt(LocalDate startdato, LocalDate slutdato) {
+		if (startdato.isAfter(slutdato))
+			throw new IllegalArgumentException("En startdato må ikke være efter en slutdato");
+		int klip = 0;
+		for (Salg s : storage.getSalgliste()) {
+			for (Salgslinje sl : s.getSalgslinjer()) {
+				if (sl.getProdukt().getNavn().equals("Klippekort")
+						&& ((s.getDato() != null && s.getDato().isBefore(slutdato) && s.getDato().isAfter(startdato))
+								|| (s.getDato() != null && s.getDato().equals(startdato)
+										|| s.getDato() != null && s.getDato().equals(slutdato)))) {
+					klip = klip + 4 * sl.getAntal();
+				}
+			}
+		}
+		return klip;
+	}
+
+	public int antalBrugteKlip(LocalDate startdato, LocalDate slutdato) {
+		int klip = 0;
+		for (Salg s : storage.getSalgliste()) {
+			if (s.getBetalingsform() != null && s.getBetalingsform().getNavn().equals("Klippekort")
+					&& ((s.getDato() != null && s.getDato().isBefore(slutdato) && s.getDato().isAfter(startdato))
+							|| (s.getDato() != null && s.getDato().equals(startdato)
+									|| s.getDato() != null && s.getDato().equals(slutdato)))) {
+				for (Salgslinje sl : s.getSalgslinjer()) {
+					klip = klip + sl.getAntal();
+				}
+			}
+		}
+		return klip;
+	}
+
+	public List<Salg> getSalgafklippekort(LocalDate startdato, LocalDate slutdato) {
+		List<Salg> klipsalg = new ArrayList<>();
+		for (Salg s : storage.getSalgliste()) {
+			for (Salgslinje sl : s.getSalgslinjer()) {
+				if (sl.getProdukt().getNavn().equals("Klippekort")
+						&& ((s.getDato() != null && s.getDato().isBefore(slutdato) && s.getDato().isAfter(startdato))
+								|| (s.getDato() != null && s.getDato().equals(startdato)
+										|| s.getDato() != null && s.getDato().equals(slutdato)))) {
+					klipsalg.add(s);
+					break;
+
+				}
+			}
+		}
+		return klipsalg;
+	}
+
+	public List<Salg> getBetalteSalgmedKlippekort(LocalDate startdato, LocalDate slutdato) {
+		List<Salg> klipsalg = new ArrayList<>();
+		for (Salg s : storage.getSalgliste()) {
+			if (s.getBetalingsform() != null && s.getBetalingsform().getNavn().equals("Klippekort")
+					&& ((s.getDato() != null && s.getDato().isBefore(slutdato) && s.getDato().isAfter(startdato))
+							|| (s.getDato() != null && s.getDato().equals(startdato)
+									|| s.getDato() != null && s.getDato().equals(slutdato)))) {
+
+				klipsalg.add(s);
+			}
+		}
+		return klipsalg;
+	}
+
+	public int getKlipIOmløb(LocalDate fra, LocalDate til) {
+		return antalKlipiAlt(fra, til) - antalBrugteKlip(fra, til);
+	}
+
+	public int getAlleklipIomløb() {
+		int brugteklip = 0;
+		int solgteklip = 0;
+		for (Salg s : storage.getSalgliste()) {
+			if (s.getBetalingsform() != null && s.getBetalingsform().getNavn().equals("Klippekort")) {
+				for (Salgslinje sl : s.getSalgslinjer()) {
+					brugteklip = brugteklip + sl.getAntal();
+				}
+			}
+		}
+
+		for (Salg s : storage.getSalgliste()) {
+			for (Salgslinje sl : s.getSalgslinjer()) {
+				if (sl.getProdukt().getNavn().equals("Klippekort")) {
+					solgteklip = solgteklip + 4 * sl.getAntal();
+				}
+			}
+		}
+		return solgteklip - brugteklip;
+	}
+
+	/**
+	 * retunere hvor mange genstande der er solgt af et valgt produkt, imellem to
+	 * valgte datoer
+	 * 
+	 * @param produkt
+	 * @param startdato
+	 * @param slutdato
+	 * @return
+	 */
+
+	public int antalSolgteAfProduktOverPeriode(Produkt produkt, LocalDate startdato, LocalDate slutdato) {
+		int solgte = 0;
+		if (startdato.isAfter(slutdato))
+			throw new IllegalArgumentException("En startdato må ikke være efter en slutdato");
+		for (Salg s : storage.getSalgliste()) {
+			for (int i = 0; i < s.getSalgslinjer().size(); i++) {
+				if (s.getSalgslinjer().get(i).getProdukt() == produkt
+						&& ((s.getDato().isBefore(slutdato) && s.getDato().isAfter(startdato))
+								|| (s.getDato().equals(startdato) || s.getDato().equals(slutdato)))) {
+					solgte += s.getSalgslinjer().get(i).getAntal();
+				}
+			}
+		}
+		return solgte;
+	}
+
+	public List<Betalingsform> rundvisningsBetalingsformer() {
+		List<Betalingsform> betalingsformer = new ArrayList<>();
+		for (Betalingsform b : storage.getBetalingsformer()) {
+			if (!b.getNavn().equals("Klippekort") && !b.getNavn().equals("Regning"))
+				betalingsformer.add(b);
+		}
+		return betalingsformer;
+	}
+
+	/**
+	 * Viser alle fremtidge rundvisninger
+	 * 
+	 * @return
+	 */
+
+	public List<Rundvisning> fremtidigeRundvisninger() {
+		List<Rundvisning> planlagterundvisninger = new ArrayList<>();
+		for (Rundvisning r : storage.getRundvisninger()) {
+			if (r.getDato().equals(LocalDate.now()) || r.getDato().isAfter(LocalDate.now())) {
+				planlagterundvisninger.add(r);
+			}
+		}
+		return planlagterundvisninger;
+	}
+
+	public List<Pris> AllePriserfraPrisliste(Prisliste prisliste) {
+		return prisliste.getPriser();
+	}
+
+	/**
+	 * Viser alle salg fra en specifik prisliste og i en bestemt periode, hvis dette
+	 * er valgt
+	 * 
+	 * @param prisliste
+	 * @param datoFra
+	 * @param datoTil
+	 * @return
+	 */
+	public List<Salg> alleSalgStatistik(Prisliste prisliste, LocalDate datoFra, LocalDate datoTil) {
+		List<Salg> salgsliste = new ArrayList<>();
+		for (Salg s : storage.getSalgliste()) {
+			for (Salgslinje sl : s.getSalgslinjer()) {
+				Pris p = sl.getProdukPris();
+				if (p.getPrisliste().equals(prisliste)) {
+					// hvis der er valgt en dato
+					if (datoFra != null && datoTil != null) {
+						if (datoFra.isAfter(datoTil) || datoTil.isBefore(datoFra)) {
+							throw new IllegalArgumentException("Ugyldig periode");
+						} else {
+							if (s.getDato().isBefore(datoTil) && s.getDato().isAfter(datoFra)
+									|| s.getDato().equals(datoFra) || s.getDato().equals(datoTil)) {
+								salgsliste.add(s);
+								break;
+							}
+						}
+
+					} // hvis der ikke er valgt en dato
+					else {
+						salgsliste.add(s);
+					}
+				}
+			}
+		}
+		return salgsliste;
+	}
+
+	/**
+	 * Viser antal x produkter på lager
+	 * 
+	 * @return
+	 */
+	public List<String> lagerStatus() {
+		List<String> result = new ArrayList<>();
+		String s;
+		for (Produkt p : storage.getProdukter()) {
+			s = p.getAntalPåLager() + "x, " + p.getNavn();
+			result.add(s);
+		}
+		return result;
+		// evt sorter efter antal og/eller navn
+	}
+
+	public boolean checkAntalPåLager(Produkt produkt, int antal) {
+		if (produkt.getAntalPåLager() >= antal) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Viser hvor mange øl der er solgt fra gaveæskerne
+	 * 
+	 * @return
+	 */
+	public List<String> ølSolgtFraGaveæsker() {
+		int antal = 0;
+		List<String> produkter = new ArrayList<>();
+		List<String> result = new ArrayList<>();
+		for (Salg s : getAllSalg()) {
+			for (Salgslinje sl : s.getSalgslinjer()) {
+				Produkt p = sl.getProdukt();
+				if (p instanceof Gaveæske) {
+					for (Produkt pp : ((Gaveæske) p).getProdukter()) {
+						if (pp.getProduktgruppe().getNavn() == "flaske") {
+							produkter.add(pp.getNavn());
+						}
+					}
+
+				}
+
+			}
+		}
+		Collections.sort(produkter);
+		for (int i = 0; i < produkter.size(); i++) {
+			antal++;
+			
+			if (i + 1 == produkter.size()) {
+				result.add(produkter.get(i) + " " + antal);
+			} else  {
+				if (!produkter.get(i).equals(produkter.get(i + 1))) {
+					result.add(produkter.get(i) + " " + antal);
+				antal = 0;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Hjælpemetode som finder ud af om et produkt er fra en gaveæske og er et
+	 * ølprodukt
+	 * 
+	 * @return
+	 */
+	private Produkt gaveæskeOgØlProdukt() {
+		Produkt result = null;
+		for (Produkt p : getAllProdukter()) {
+			if (p instanceof Gaveæske) {
+				for (Produkt pp : ((Gaveæske) p).getProdukter()) {
+					if (pp.getProduktgruppe().getNavn() == "flaske") {
+						result = p;
+					}
+				}
+				result = p;
+			}
+		}
+		return result;
+	}
+
+	public void initStorage() {
+		Produktgruppe flaske = createProduktgruppe("flaske", false);
+		Produkt klosterbryg = createProdukt(flaske, "Klosterbryg", 100);
+		Produkt SGB = createProdukt(flaske, "Sweet Georgia Brown", 100);
+		Produkt EP = createProdukt(flaske, "Extra Pilsner", 100);
+		Produkt celebration = createProdukt(flaske, "Celebration", 100);
+		Produkt blondie = createProdukt(flaske, "Blondie", 100);
+		Produkt forårsbryg = createProdukt(flaske, "Forårsbryg", 100);
+		Produkt IPA = createProdukt(flaske, "India Pale Ale", 100);
+		Produkt julebryg = createProdukt(flaske, "Julebryg", 100);
+		Produkt juletønden = createProdukt(flaske, "Juletønden", 100);
+		Produkt OSA = createProdukt(flaske, "Old Strong Ale", 100);
+		Produkt fregatten = createProdukt(flaske, "Fregatten Jylland", 100);
+		Produkt imperial = createProdukt(flaske, "Imperial Stout", 100);
+		Produkt tribute = createProdukt(flaske, "Tribute", 100);
+		Produkt BM = createProdukt(flaske, "Black Monster", 100);
+
+		Produktgruppe fadøl40cl = createProduktgruppe("Fadøl, 40 cl", false);
+		Produkt kp = createProdukt(fadøl40cl, "Klosterbryg", 100);
+		Produkt jazz = createProdukt(fadøl40cl, "Jazz Classic", 100);
+		Produkt ep = createProdukt(fadøl40cl, "Extra Pilsner", 100);
+		Produkt cele = createProdukt(fadøl40cl, "Celebration", 100);
+		Produkt blond = createProdukt(fadøl40cl, "Blondie", 100);
+		Produkt forår = createProdukt(fadøl40cl, "Forårsbryg", 100);
+		Produkt ipa = createProdukt(fadøl40cl, "India Pale Ale", 100);
+		Produkt juleb = createProdukt(fadøl40cl, "Julebryg", 100);
+		Produkt is = createProdukt(fadøl40cl, "Imperial Stout", 100);
+		Produkt special = createProdukt(fadøl40cl, "Special", 100);
+		Produkt æblebrus = createProdukt(fadøl40cl, "Æblebrus", 100);
+		Produkt chips = createProdukt(fadøl40cl, "Chips", 100);
+		Produkt peanuts = createProdukt(fadøl40cl, "Peanuts", 100);
+		Produkt cola = createProdukt(fadøl40cl, "Cola", 100);
+		Produkt niko = createProdukt(fadøl40cl, "Nikoline", 100);
+		Produkt up = createProdukt(fadøl40cl, "7-Up", 100);
+		Produkt vand = createProdukt(fadøl40cl, "vand", 100);
+
+		Produktgruppe spiritus = createProduktgruppe("Spiritus", false);
+		Produkt soa = createProdukt(spiritus, "Spirit of Aarhus", 100);
+		Produkt soamp = createProdukt(spiritus, "SOA med pind", 100);
+		Produkt whisky = createProdukt(spiritus, "Whisky", 100);
+		Produkt loa = createProdukt(spiritus, "Liquor of Aarhus", 100);
+
+		Produktgruppe fustage = createProduktgruppe("Fustage", true);
+		Produkt fkp = createPantProdukt(fustage, "Klosterbryg, 20 liter", 100, 200);
+		Produkt fjazz = createPantProdukt(fustage, "Jazz Classic, 25 liter", 100, 200);
+		Produkt fep = createPantProdukt(fustage, "Extra Pilsner, 25 liter", 100, 200);
+		Produkt fcele = createPantProdukt(fustage, "Celebration, 20 liter", 100, 200);
+		Produkt fblond = createPantProdukt(fustage, "Blondie, 25 liter", 100, 200);
+		Produkt fforår = createPantProdukt(fustage, "Forårsbryg, 20 liter", 100, 200);
+		Produkt fipa = createPantProdukt(fustage, "India Pale Ale, 20 liter", 100, 200);
+		Produkt fjule = createPantProdukt(fustage, "Julebryg, 20 liter", 100, 200);
+		Produkt fis = createPantProdukt(fustage, "Imperial Stout", 100, 200);
+
+		Produktgruppe beklædning = createProduktgruppe("Beklædning", false);
+		Produkt tshirt = createProdukt(beklædning, "t-shirt", 100);
+		Produkt polo = createProdukt(beklædning, "polo", 100);
+		Produkt cap = createProdukt(beklædning, "cap", 100);
+
+		Produktgruppe anlæg = createProduktgruppe("Anlæg", true);
+		Produkt enhane = createProdukt(anlæg, "1-hane", 100);
+		Produkt tohaner = createProdukt(anlæg, "2-haner", 100);
+		Produkt bar = createProdukt(anlæg, "Bar med flere haner", 100);
+		Produkt levering = createProdukt(anlæg, "Levering", 100);
+		Produkt krus = createProdukt(anlæg, "Krus", 100);
+
+		Produktgruppe glas = createProduktgruppe("Glas", false);
+		Produkt glasp = createProdukt(glas, "glas", 100);
+
+		Produktgruppe sampakninger = createProduktgruppe("Sampakninger", false);
+		Gaveæske g1 = createGaveæske("Gaveæske 2 klosterbryg, 2 glas", 100, 2, 2, sampakninger);
+		g1.addProdukt(klosterbryg);
+		g1.addProdukt(klosterbryg);
+		g1.addProdukt(glasp);
+		g1.addProdukt(glasp);
+		Gaveæske g2 = createGaveæske("Gaveæske med 4 klosterbryg", 100, 0, 4, sampakninger);
+		g2.addProdukt(klosterbryg);
+		g2.addProdukt(klosterbryg);
+		g2.addProdukt(klosterbryg);
+		g2.addProdukt(klosterbryg);
+
+		Gaveæske g3 = createGaveæske("Trækasse med 6 øl", 100, 0, 6, sampakninger);
+		g3.addProdukt(EP);
+		g3.addProdukt(celebration);
+		g3.addProdukt(klosterbryg);
+		g3.addProdukt(klosterbryg);
+		g3.addProdukt(klosterbryg);
+		g3.addProdukt(forårsbryg);
+
+		Gaveæske g4 = createGaveæske("Gavekurv 6 øl, 2 glas", 100, 2, 6, sampakninger);
+		g4.addProdukt(klosterbryg);
+		g4.addProdukt(klosterbryg);
+		g4.addProdukt(klosterbryg);
+		g4.addProdukt(klosterbryg);
+		g4.addProdukt(klosterbryg);
+		g4.addProdukt(klosterbryg);
+		g4.addProdukt(glasp);
+		g4.addProdukt(glasp);
+
+		Gaveæske g5 = createGaveæske("Trækasse 6 øl, 6 glas", 100, 6, 6, sampakninger);
+		g5.addProdukt(klosterbryg);
+		g5.addProdukt(klosterbryg);
+		g5.addProdukt(klosterbryg);
+		g5.addProdukt(klosterbryg);
+		g5.addProdukt(klosterbryg);
+		g5.addProdukt(klosterbryg);
+		g5.addProdukt(glasp);
+		g5.addProdukt(glasp);
+		g5.addProdukt(glasp);
+		g5.addProdukt(glasp);
+		g5.addProdukt(glasp);
+		g5.addProdukt(glasp);
+
+		Gaveæske g6 = createGaveæske("Trækasse 12 øl", 100, 0, 12, sampakninger);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+		g6.addProdukt(klosterbryg);
+
+		Gaveæske g7 = createGaveæske("Papkasse 12 øl", 100, 0, 12, sampakninger);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+		g7.addProdukt(klosterbryg);
+
+		Betalingsform kontant = createBetalingsform("Kontant");
+		Betalingsform dankort = createBetalingsform("Dankort");
+		Betalingsform kk = createBetalingsform("Klippekort");
+		Betalingsform mobilepay = createBetalingsform("MobilePay");
+		Betalingsform regning = createBetalingsform("Regning");
+
+		createRundvisning("EAA Rundvisning", LocalTime.of(12, 30), LocalTime.of(14, 30), LocalDate.of(2019, 03, 28),
+				100, 12345678, kontant, 50, true);
+
+		createRundvisning("Bibliotek", LocalTime.of(10, 30), LocalTime.of(12, 30), LocalDate.of(2019, 05, 03), 100,
+				87654321, kontant, 30, false);
+
+		Prisliste pl1 = createPrisliste("Fredagsbar");
+		// Flaske
+		Pris p1 = pl1.CreatePris(50, klosterbryg);
+		pl1.CreatePris(50, SGB);
+		pl1.CreatePris(50, EP);
+		pl1.CreatePris(50, celebration);
+		pl1.CreatePris(50, blondie);
+		pl1.CreatePris(50, forårsbryg);
+		pl1.CreatePris(50, IPA);
+		pl1.CreatePris(50, julebryg);
+		pl1.CreatePris(50, juletønden);
+		pl1.CreatePris(50, OSA);
+		pl1.CreatePris(50, fregatten);
+		pl1.CreatePris(50, imperial);
+		pl1.CreatePris(50, tribute);
+		pl1.CreatePris(50, BM);
+
+		// Fadøl
+		pl1.CreatePris(30, kp);
+		pl1.CreatePris(30, jazz);
+		pl1.CreatePris(30, ep);
+		pl1.CreatePris(30, cele);
+		pl1.CreatePris(30, blond);
+		pl1.CreatePris(30, forår);
+		pl1.CreatePris(30, ipa);
+		pl1.CreatePris(30, juleb);
+		pl1.CreatePris(30, is);
+		pl1.CreatePris(30, special);
+		pl1.CreatePris(15, æblebrus);
+		pl1.CreatePris(10, chips);
+		pl1.CreatePris(10, peanuts);
+		pl1.CreatePris(15, cola);
+		pl1.CreatePris(15, niko);
+		pl1.CreatePris(15, up);
+		pl1.CreatePris(10, vand);
+
+		// Spiritus
+		pl1.CreatePris(300, soa);
+		pl1.CreatePris(350, soamp);
+		pl1.CreatePris(500, whisky);
+		pl1.CreatePris(175, loa);
+
+		// Beklædning
+		pl1.CreatePris(70, tshirt);
+		pl1.CreatePris(100, polo);
+		pl1.CreatePris(30, cap);
+
+		// Sampakninger
+		pl1.CreatePris(100, g1);
+		pl1.CreatePris(130, g2);
+		pl1.CreatePris(240, g3);
+		pl1.CreatePris(250, g4);
+		pl1.CreatePris(290, g5);
+		pl1.CreatePris(390, g6);
+		pl1.CreatePris(360, g7);
+
+		Prisliste pl2 = createPrisliste("Butik");
+		// Flaske
+		pl2.CreatePris(36, klosterbryg);
+		pl2.CreatePris(36, SGB);
+		pl2.CreatePris(36, EP);
+		pl2.CreatePris(36, celebration);
+		pl2.CreatePris(36, blondie);
+		pl2.CreatePris(36, forårsbryg);
+		pl2.CreatePris(36, IPA);
+		pl2.CreatePris(36, julebryg);
+		pl2.CreatePris(36, juletønden);
+		pl2.CreatePris(36, OSA);
+		pl2.CreatePris(36, fregatten);
+		pl2.CreatePris(36, imperial);
+		pl2.CreatePris(36, tribute);
+		pl2.CreatePris(36, BM);
+
+		// Spiritus
+		pl2.CreatePris(300, soa);
+		pl2.CreatePris(350, soamp);
+		pl2.CreatePris(500, whisky);
+		pl2.CreatePris(175, loa);
+
+		// Fustage
+		pl2.CreatePris(775, fkp);
+		pl2.CreatePris(625, fjazz);
+		pl2.CreatePris(575, fep);
+		pl2.CreatePris(775, fcele);
+		pl2.CreatePris(700, fblond);
+		pl2.CreatePris(775, fforår);
+		pl2.CreatePris(775, fipa);
+		pl2.CreatePris(775, fjule);
+		pl2.CreatePris(775, fis);
+
+		// Beklædning
+		pl2.CreatePris(70, tshirt);
+		pl2.CreatePris(100, polo);
+		pl2.CreatePris(30, cap);
+
+		// Anlæg
+		pl2.CreatePris(250, enhane);
+		pl2.CreatePris(400, tohaner);
+		pl2.CreatePris(500, bar);
+		pl2.CreatePris(500, levering);
+		pl2.CreatePris(60, krus);
+
+		// Glas
+		pl2.CreatePris(15, glasp);
+
+		// Sampakninger
+		pl2.CreatePris(100, g1);
+		pl2.CreatePris(130, g2);
+		pl2.CreatePris(240, g3);
+		Pris gaveæske2 = pl2.CreatePris(250, g1);
+		Pris gaveæske3 = pl2.CreatePris(290, g3);
+		pl2.CreatePris(390, g6);
+		pl2.CreatePris(360, g7);
+
+		Rabat r1 = createIngenRabat();
+
+		Produktgruppe klippekort = createProduktgruppe("Klippekort", false);
+
+		Prisliste pl3 = createPrisliste("Klippekort");
+
+		Produkt klippekorte = createProdukt(klippekort, "Klippekort", 100);
+
+		Pris k1 = pl3.CreatePris(100, klippekorte);
+
+		Salg s1 = createSalg();
+
+		s1.createSalgslinje(p1, 3, r1);
+
+		s1.setDato(LocalDate.of(2019, 03, 15));
+
+		s1.setBetalingsform(kk);
+
+		Salg s2 = createSalg();
+
+		s2.createSalgslinje(k1, 2, r1);
+
+		s2.createSalgslinje(k1, 1, r1);
+
+		s2.setDato(LocalDate.of(2019, 03, 04));
+
+		s2.setBetalingsform(dankort);
+
+		Salg s3 = createSalg();
+
+		s3.createSalgslinje(p1, 5, r1);
+
+		s3.setDato(LocalDate.of(2019, 03, 15));
+
+		s3.setBetalingsform(kk);
+
+		Salg s4 = createSalg();
+		s4.createSalgslinje(gaveæske2, 1, r1);
+		s4.setDato(LocalDate.now());
+		s4.setBetalingsform(kk);
+
+		Salg s5 = createSalg();
+		s5.createSalgslinje(gaveæske2, 1, r1);
+		s5.setDato(LocalDate.now());
+		s5.setBetalingsform(kk);
+
+		Salg s6 = createSalg();
+		s6.createSalgslinje(gaveæske2, 1, r1);
+		s6.setDato(LocalDate.now());
+		s6.setBetalingsform(kk);
+
+		Salg s7 = createSalg();
+		s7.createSalgslinje(gaveæske3, 1, r1);
+		s7.setDato(LocalDate.now());
+		s7.setBetalingsform(kk);
+
+	}
+
+}

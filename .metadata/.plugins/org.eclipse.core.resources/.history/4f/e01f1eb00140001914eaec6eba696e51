@@ -1,0 +1,16 @@
+package exercise3;
+
+public class ElApp extends Item {
+	
+	
+
+	public ElApp(double netprice, String name) {
+		super(netprice, name);
+	}
+	
+	public double calcVAT() {
+		return getNetprice() * 1.05;
+	}
+
+
+}

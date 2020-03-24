@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy package &apos;generics&apos; to &apos;Lektion26GenericClasses/src&apos;&#x0D;&#x0A;- Original project: &apos;Lektion26GenericExample&apos;&#x0D;&#x0A;- Destination element: &apos;Lektion26GenericClasses/src&apos;&#x0D;&#x0A;- Original element: &apos;Lektion26GenericExample/src/generics&apos;" description="Copy package" destination="=Lektion26GenericClasses/src" element1="/src&lt;generics" flags="589830" fragments="1" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyPackages" stamp="1558335484190" version="1.0"/>
+</session>

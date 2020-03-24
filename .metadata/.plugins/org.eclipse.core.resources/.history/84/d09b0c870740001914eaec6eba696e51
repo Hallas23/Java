@@ -1,0 +1,13 @@
+package exercise3;
+
+public class Adapter extends AlcoBev{
+	
+	private AlcoBev alcoBev;
+	
+	
+	public double getVat() {
+		
+	}
+
+
+}

@@ -1,0 +1,13 @@
+package exercise3;
+
+public interface Adapter extends Item{
+	
+	private AlcoBev alcobev;
+	
+	
+	public double getVat() {
+		
+	}
+
+
+}
